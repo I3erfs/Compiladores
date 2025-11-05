@@ -1,10 +1,10 @@
-# 🚀 Project Title
+# 🚀 Projeto Compiladores 2s2025 UNIFESP
 
 A short description of what your project does and why it’s useful.
 
----
 
 ## 📋 Table of Contents
+- [Autores](#-Autores)
 - [About](#-about)
 - [Features](#-features)
 - [Getting Started](#-getting-started)
@@ -14,7 +14,10 @@ A short description of what your project does and why it’s useful.
 - [License](#-license)
 - [Author](#-author)
 
----
+## Autores
+
+André Caly Bortolotto
+Bernardo Friske de Souza
 
 ## 🧠 About
 
