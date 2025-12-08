@@ -13,6 +13,8 @@
   extern int tokenNUM;
   extern int parseResult;
 
+  char *savedID;
+
   extern char *functionName;
   extern char *currentScope;
   extern char *expName;
@@ -94,13 +96,13 @@ declaracao:
 var_declaracao:
     tipo_especificador ID SEMICOLON {
         $$ = createDeclVarNode(declVar, $1);
-        $$->key.name = strdup(yytext);
+        $$->key.name = strdup(savedID);
         $$->line = yylineno;
         insertSymbolInTable(expName, currentScope, VAR, yylineno, $1->type);
     }
     | tipo_especificador ID LBRACK NUM RBRACK SEMICOLON {
         $$ = createArrayDeclVarNode(expNum, declVar, $1);
-        $$->key.name = strdup(yytext);
+        $$->key.name = strdup(savedID);
         $$->line = yylineno;
         insertSymbolInTable(expName , currentScope, ARRAY, yylineno, $1->type);
     }
@@ -318,7 +320,7 @@ fator:
 id_ativacao:
     ID {
         $$ = createExpNode(expId); 
-        $$->key.name = strdup(yytext); 
+        $$->key.name = strdup(savedID);
     }
     ;
 
