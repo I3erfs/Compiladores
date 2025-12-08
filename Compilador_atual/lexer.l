@@ -5,6 +5,7 @@
 #include "parser.tab.h"
 #include "node.h"
 
+extern char *savedID;
 void ignorar_comentario();
 extern int yylineno; // Variável global de linha
 extern FILE *input_file; // Adicione esta linha para declarar input_file
@@ -85,6 +86,8 @@ int openBraces = 0;
     // printf("ID: %s   |   scope: %s\n", yytext, currentScope);
     expLine = yylineno;
     expName = strdup(yytext);
+    if (savedID) free(savedID);
+    savedID = strdup(yytext);
     return ID;
 } // Assign value to expName for identifiers
 
