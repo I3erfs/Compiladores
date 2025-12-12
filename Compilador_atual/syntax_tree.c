@@ -31,6 +31,7 @@ treeNode *createNode() {
     newNode->sibling = NULL;
     newNode->line = currentLine;
     newNode->scope = currentScope;
+    newNode->isIgnored = 0; // flag inicia com 0
     return newNode;
 }
 
