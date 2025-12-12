@@ -7,6 +7,9 @@
   #include "utils.h"
   #include "symbol_table.h"
   
+  #define MAX_PARAMS 50
+primitiveType tempParamTypes[MAX_PARAMS];
+  
   treeNode *syntax_tree;
   SymbolTable tabela;
 
@@ -118,10 +121,12 @@ tipo_especificador:
 
 fun_declaracao:
     tipo_especificador ID LPAREN params RPAREN composto_decl {
-        $$ = createDeclFuncNode(declFunc, $1, $4, $6); paramsCount = 0;
+        $$ = createDeclFuncNode(declFunc, $1, $4, $6);
         int funcLine = functionCurrentLine;
         currentScope = strdup(yytext); // Atualiza o escopo para o nome da função
         insertSymbolInTable(functionName, "global", FUNC, funcLine - 1, $1->type); // Insere a função na tabela de símbolos
+        setSymbolParams(&tabela, functionName, "global", paramsCount, tempParamTypes); // Salva contagem e tipos  
+        paramsCount = 0;
     }
     ;
 
@@ -147,10 +152,14 @@ param:
     tipo_especificador ID {
         $$ = createDeclVarNode(declVar, $1);
         insertSymbolInTable(expName, currentScope, VAR, yylineno, $1->type); // Insere o parâmetro na tabela de símbolos
+        if (paramsCount < MAX_PARAMS) tempParamTypes[paramsCount] = $1->type;
+        paramsCount++;
     }
     | tipo_especificador ID LBRACK RBRACK {
         $$ = createArrayArg(declVar, $1);
         insertSymbolInTable(expName, currentScope, ARRAY, yylineno, $1->type); // Insere o parâmetro array na tabela de símbolos
+        if (paramsCount < MAX_PARAMS) tempParamTypes[paramsCount] = Array;
+        paramsCount++;
     }
     ;
 
@@ -364,12 +373,6 @@ arg_lista:
 int yyerror(char *errorMsg) {
   printf("(!) ERRO SINTATICO: Linha: %d | Token: %s\n", yylineno, yytext);
   return 1;
-}
-
-treeNode *parse() {
-
-    parseResult = yyparse(); 
-    return syntax_tree; 
 }
 
 treeNode *parse() {
