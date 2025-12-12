@@ -19,6 +19,8 @@ typedef struct Symbol {
     SymbolType type;
     LineList *lines;
     primitiveType dataType;
+    int numParams;
+    primitiveType *paramTypes;  
     struct Symbol *next; // Para resolver colisões na tabela hash
 } Symbol;
 
@@ -33,4 +35,7 @@ void addLine(Symbol *symbol, int line);
 void printSymbolTable(SymbolTable *table);
 int hash(char *key);
 
+void setSymbolParams(SymbolTable *table, char *name, char *scope, int numParams, primitiveType *paramTypes);
+
+#endif // SYMBOL_TABLE_H
 #endif // SYMBOL_TABLE_H
