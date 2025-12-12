@@ -34,6 +34,8 @@ int insertSymbol(SymbolTable *table, char *name, char *scope, SymbolType type, i
     newSymbol->lines->next = NULL;
     newSymbol->dataType = dataType;
     newSymbol->next = table->table[index];
+    newSymbol->numParams = 0;    
+    newSymbol->paramTypes = NULL; 
     table->table[index] = newSymbol;
     return 0;
 }
@@ -55,6 +57,21 @@ void addLine(Symbol *symbol, int line) {
     newLine->line = line;
     newLine->next = symbol->lines;
     symbol->lines = newLine;
+}
+
+void setSymbolParams(SymbolTable *table, char *name, char *scope, int numParams, primitiveType *paramTypes) {
+    Symbol *sym = findSymbol(table, name, scope);
+    if (sym != NULL) {
+        sym->numParams = numParams;
+        
+        // Aloca e copia a lista de tipos para a tabela
+        if (numParams > 0 && paramTypes != NULL) {
+            sym->paramTypes = (primitiveType *)malloc(numParams * sizeof(primitiveType));
+            for (int i = 0; i < numParams; i++) {
+                sym->paramTypes[i] = paramTypes[i];
+            }
+        }
+    }
 }
 
 const char* symbolTypeToString(SymbolType type) {
@@ -94,4 +111,5 @@ void printSymbolTable(SymbolTable *table) {
             current = current->next;
         }
     }
+}
 }
