@@ -1,6 +1,8 @@
-#ifndef SEMANTIC_ANALYSIS_H
-#define SEMANTIC_ANALYSIS_H
+#ifndef _SEMANTIC_H_
+#define _SEMANTIC_H_
 
-void semanticAnalysis();
+#include "node.h"
 
-#endif // SEMANTIC_ANALYSIS_H
+void semanticAnalysis(treeNode * syntaxTree);
+
+#endif
