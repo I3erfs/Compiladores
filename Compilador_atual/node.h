@@ -21,7 +21,7 @@ typedef struct treeNode {
     int line;
     int params; 
     int args;
-    int isIgnored; // flag para cahmada de função
+    int isIgnored; // flag para chamada de função
     nodeType node;
     primitiveType type;
 
