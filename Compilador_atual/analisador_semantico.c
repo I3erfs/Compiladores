@@ -89,16 +89,19 @@ static void checkNode(treeNode *t) {
                     }
                     break;
 
-                case stmtFunc:
-                    sym = findSymbol(&tabela, t->key.name, "global");
-                    if (sym == NULL) {
-                        char erro[100];
-                        sprintf(erro, "Funcao '%s' nao declarada", t->key.name);
-                        semanticError(t, erro);
-                    } else {
-                        t->type = sym->dataType;
+        case stmtFunc:
+                sym = findSymbol(&tabela, t->key.name, "global");
+                if (sym == NULL) {
+                       char erro[100];
+                    sprintf(erro, "Funcao '%s' nao declarada", t->key.name);
+                    semanticError(t, erro);
+                } else {
+                    t->type = sym->dataType;
+                    if (t->isIgnored && sym->dataType != Void) {
+                        semanticError(t, "chamada invalida, parametro de retorno da funcao nao previsto");
                     }
-                    break;
+                }
+                break;
 
                 case stmtReturn:
                     if (strcmp(currentScope, "global") == 0) {
@@ -126,6 +129,12 @@ static void checkNode(treeNode *t) {
                 case declVar:
                     if (t->type == Void) {
                         semanticError(t, "Variavel nao pode ser declarada como Void");
+                    }
+                    Symbol *symGlobal = findSymbol(&tabela, t->key.name, "global");
+                    if (symGlobal != NULL && symGlobal->type == FUNC) {
+                        char erro[100];
+                        sprintf(erro, "Declaracao invalida, '%s' ja foi declarado como nome de funcao", t->key.name);
+                        semanticError(t, erro);
                     }
                     break;
             }
