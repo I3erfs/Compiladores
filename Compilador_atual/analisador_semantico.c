@@ -10,7 +10,7 @@ extern treeNode *syntaxTree;
 
 static char *currentScope = "global";
 
-// --- CORREÇÃO: Função movida para o topo ---
+//  Função movida para o topo 
 static int countArguments(treeNode *args) {
     int count = 0;
     treeNode *t = args;
@@ -20,7 +20,6 @@ static int countArguments(treeNode *args) {
     }
     return count;
 }
-// -------------------------------------------
 
 static void traverse(treeNode *t);
 
