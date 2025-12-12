@@ -10,6 +10,20 @@ extern treeNode *syntaxTree;
 
 static char *currentScope = "global";
 
+// --- CORREÇÃO: Função movida para o topo ---
+static int countArguments(treeNode *args) {
+    int count = 0;
+    treeNode *t = args;
+    while (t != NULL) {
+        count++;
+        t = t->sibling;
+    }
+    return count;
+}
+// -------------------------------------------
+
+static void traverse(treeNode *t);
+
 static Symbol* lookupSymbol(char *name) {
     Symbol *sym = findSymbol(&tabela, name, currentScope);
     
@@ -59,7 +73,11 @@ static void checkNode(treeNode *t) {
                         semanticError(t, erro);
                         t->type = Integer; 
                     } else {
-                        t->type = sym->dataType;
+                        if (sym->type == ARRAY) {
+                            t->type = Array;
+                        } else {
+                            t->type = sym->dataType;
+                        }
                     }
                     break;
             }
@@ -97,7 +115,39 @@ static void checkNode(treeNode *t) {
                     semanticError(t, erro);
                 } else {
                     t->type = sym->dataType;
-                    if (t->isIgnored && sym->dataType != Void) {
+                        
+                    // Problema 8: Contagem de Argumentos 
+                    int numArgs = countArguments(t->child[1]); 
+                    
+                    if (numArgs != sym->numParams) {
+                         char erro[150];
+                         sprintf(erro, "Chamada invalida para '%s': esperava %d argumentos, recebeu %d", 
+                         t->key.name, sym->numParams, numArgs);
+                         semanticError(t, erro);
+                    } 
+                    else {
+                         // Problema 9: Verificação de Tipos 
+                         treeNode *argNode = t->child[1];
+                         int i = 0;
+                             
+                         while (argNode != NULL && i < sym->numParams) {
+                            if (argNode->type != sym->paramTypes[i]) {
+                                char erro[150];
+                                sprintf(erro, 
+                                    "Tipo de argumento invalido na chamada de '%s'. Argumento %d esperava %s, recebeu %s", 
+                                       t->key.name, 
+                                       i + 1, 
+                                       (sym->paramTypes[i] == Array ? "Array" : "Integer"),
+                                       (argNode->type == Array ? "Array" : "Integer")
+                                   );
+                                   semanticError(argNode, erro);
+                            }
+                            argNode = argNode->sibling;
+                            i++;
+                         }
+                    }                        
+                    // Problema 10: Retorno Ignorado 
+                   if (t->isIgnored && sym->dataType != Void) {
                         semanticError(t, "chamada invalida, parametro de retorno da funcao nao previsto");
                     }
                 }
@@ -171,3 +221,4 @@ void semanticAnalysis(treeNode *tree) {
 
     traverse(tree);
 }
+
