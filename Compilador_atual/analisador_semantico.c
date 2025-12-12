@@ -1,116 +1,164 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "syntax_tree.h"
 #include "node.h"
-#include "utils.h"
-#include "symbol_table.h"
 #include "analisador_semantico.h"
+#include "symbol_table.h"
 
 extern SymbolTable tabela;
 extern treeNode *syntaxTree;
 
-void checkUndeclaredVariable(char *name, char *scope, int line) {
-    if (!findSymbol(&tabela, name, scope)) {
-        printf("Erro semântico: Variável '%s' não declarada na linha %d\n", name, line);
+static char *currentScope = "global";
+
+static Symbol* lookupSymbol(char *name) {
+    Symbol *sym = findSymbol(&tabela, name, currentScope);
+    
+    if (sym == NULL && strcmp(currentScope, "global") != 0) {
+        sym = findSymbol(&tabela, name, "global");
     }
+    
+    return sym;
 }
 
-void checkInvalidAssignment(char *name, char *scope, primitiveType expectedType, int line) {
-    Symbol *symbol = findSymbol(&tabela, name, scope);
-    if (symbol && symbol->dataType != expectedType) {
-        printf("Erro semântico: Atribuição inválida para a variável '%s' na linha %d\n", name, line);
-    }
+static void semanticError(treeNode *t, char *msg) {
+    if (t != NULL)
+        fprintf(stderr, "ERRO SEMANTICO (Linha %d): %s\n", t->line, msg);
+    else
+        fprintf(stderr, "ERRO SEMANTICO: %s\n", msg);
 }
 
-void checkFunctionReturnType(char *name, primitiveType expectedType, int line) {
-    Symbol *symbol = findSymbol(&tabela, name, "global");
-    if (symbol && symbol->dataType != expectedType) {
-        printf("Erro semântico: Função '%s' não retorna o tipo esperado na linha %d\n", name, line);
-    }
-}
+static void checkNode(treeNode *t) {
+    Symbol *sym;
+    Symbol *funcSym;
 
-void checkFunctionDeclared(char *name, int line) {
-    if (!findSymbol(&tabela, name, "global")) {
-        printf("Erro semântico: Função '%s' não declarada na linha %d\n", name, line);
-    }
-}
-
-void checkMainFunctionDeclared() {
-    if (!findSymbol(&tabela, "main", "global")) {
-        printf("Erro semântico: Função 'main' não declarada\n");
-    }
-}
-
-void checkDuplicateDeclaration(char *name, char *scope, int line) {
-    if (findSymbol(&tabela, name, scope)) {
-        printf("Erro semântico: '%s' já foi declarado previamente no escopo '%s' na linha %d\n", name, scope, line);
-    }
-}
-
-void checkVoidVariableDeclaration(primitiveType type, int line) {
-    if (type == Void) {
-        printf("Erro semântico: Declaração inválida de variável na linha %d. 'void' só pode ser usado para declaração de função.\n", line);
-    }
-}
-
-void traverseTree(treeNode *node, char *scope) {
-    if (node == NULL) return;
-
-    switch (node->node) {
-        case decl:
-            switch (node->nodeSubType.decl) {
-                case declVar:
-                    checkDuplicateDeclaration(node->key.name, scope, node->line);
-                    checkVoidVariableDeclaration(node->type, node->line);
-                    insertSymbolInTable(node->key.name, scope, VAR, node->line, node->type);
-                    break;
-                case declFunc:
-                    checkDuplicateDeclaration(node->key.name, "global", node->line);
-                    insertSymbolInTable(node->key.name, "global", FUNC, node->line, node->type);
-                    traverseTree(node->child[0], node->key.name); // Params
-                    traverseTree(node->child[1], node->key.name); // Body
-                    break;
-                default:
-                    break;
-            }
-            break;
-        case stmt:
-            switch (node->nodeSubType.stmt) {
-                case stmtAttrib:
-                    checkUndeclaredVariable(node->child[0]->key.name, scope, node->line);
-                    checkInvalidAssignment(node->child[0]->key.name, scope, node->child[1]->type, node->line);
-                    break;
-                case stmtReturn:
-                    checkFunctionReturnType(scope, node->child[0]->type, node->line);
-                    break;
-                case stmtFunc:
-                    checkFunctionDeclared(node->key.name, node->line);
-                    break;
-                default:
-                    break;
-            }
-            break;
+    switch (t->node) {
+        
         case exp:
-            switch (node->nodeSubType.exp) {
-                case expId:
-                    checkUndeclaredVariable(node->key.name, scope, node->line);
+            switch (t->nodeSubType.exp) {
+                case expOp:
+                    if ((t->child[0]->type != Integer) || (t->child[1]->type != Integer)) {
+                        semanticError(t, "Operacao requer operandos do tipo Integer");
+                    }
+                    
+                    t->type = Integer; 
                     break;
-                default:
+
+                case expNum:
+                    t->type = Integer;
+                    break;
+
+                case expId:
+                    if (t->key.name != NULL && strcmp(t->key.name, "void") == 0) {
+                        t->type = Void; 
+                        break; 
+                    }
+                    sym = lookupSymbol(t->key.name);
+                    if (sym == NULL) {
+                        char erro[100];
+                        sprintf(erro, "Variavel '%s' nao declarada", t->key.name);
+                        semanticError(t, erro);
+                        t->type = Integer; 
+                    } else {
+                        t->type = sym->dataType;
+                    }
                     break;
             }
             break;
-        default:
+
+        case stmt:
+            switch (t->nodeSubType.stmt) {
+                case stmtIf:
+                case stmtWhile:
+                    if (t->child[0]->type == Void) {
+                        semanticError(t->child[0], "Condicao do IF/WHILE nao pode ser Void");
+                    }
+                    break;
+
+                case stmtAttrib:
+                    if (t->child[0]->nodeSubType.exp == expId) {
+                        sym = lookupSymbol(t->child[0]->key.name);
+                        if (sym == NULL) {
+                        } else {
+                            if (sym->dataType != t->child[1]->type) {
+                                semanticError(t, "Atribuicao com tipos incompatíveis");
+                            }
+                            if (sym->type == ARRAY) {
+                                semanticError(t, "Atribuicao direta para Array nao permitida (use indices)");
+                            }
+                        }
+                    }
+                    break;
+
+                case stmtFunc:
+                    sym = findSymbol(&tabela, t->key.name, "global");
+                    if (sym == NULL) {
+                        char erro[100];
+                        sprintf(erro, "Funcao '%s' nao declarada", t->key.name);
+                        semanticError(t, erro);
+                    } else {
+                        t->type = sym->dataType;
+                    }
+                    break;
+
+                case stmtReturn:
+                    if (strcmp(currentScope, "global") == 0) {
+                        semanticError(t, "Return fora de funcao");
+                    } else {
+                        funcSym = findSymbol(&tabela, currentScope, "global");
+                        
+                        if (t->child[0] != NULL) {
+                            if (funcSym->dataType == Void)
+                                semanticError(t, "Funcao Void nao pode retornar valor");
+                            else if (t->child[0]->type != funcSym->dataType)
+                                semanticError(t, "Tipo de retorno incompativel com a funcao");
+                        } 
+                        else {
+                            if (funcSym->dataType != Void)
+                                semanticError(t, "Funcao nao-Void deve retornar um valor");
+                        }
+                    }
+                    break;
+            }
+            break;
+
+        case decl:
+            switch (t->nodeSubType.decl) {
+                case declVar:
+                    if (t->type == Void) {
+                        semanticError(t, "Variavel nao pode ser declarada como Void");
+                    }
+                    break;
+            }
             break;
     }
-
-    for (int i = 0; i < CHILD_MAX_NODES; i++) {
-        traverseTree(node->child[i], scope);
-    }
-    traverseTree(node->sibling, scope);
 }
 
-void semanticAnalysis() {
-    checkMainFunctionDeclared();
-    traverseTree(syntaxTree, "global");
+static void traverse(treeNode *t) {
+    if (t != NULL) {
+        
+        char *savedScope = currentScope; 
+        
+        if (t->node == decl && t->nodeSubType.decl == declFunc) {
+            currentScope = t->key.name;
+        }
+
+        int i;
+        for (i = 0; i < CHILD_MAX_NODES; i++) {
+            traverse(t->child[i]);
+        }
+
+        checkNode(t);
+
+        currentScope = savedScope;
+
+        traverse(t->sibling);
+    }
+}
+
+void semanticAnalysis(treeNode *tree) {
+    if (findSymbol(&tabela, "main", "global") == NULL) {
+        fprintf(stderr, "ERRO SEMANTICO: Funcao 'main' nao encontrada.\n");
+    }
+
+    traverse(tree);
 }
