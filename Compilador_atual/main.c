@@ -46,7 +46,7 @@ int main(int argc, char **argv) {
     printf("Tabela de Símbolos:\n");
     printSymbolTable(&tabela);
 
-    //semanticAnalysis();
+    semanticAnalysis(syntax_tree);
 
 
     // Fechar o arquivo de entrada
