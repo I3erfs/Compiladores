@@ -10,7 +10,7 @@ extern treeNode *syntaxTree;
 
 static char *currentScope = "global";
 
-//  Função movida para o topo 
+// Função movida para o topo 
 static int countArguments(treeNode *args) {
     int count = 0;
     treeNode *t = args;
@@ -19,6 +19,36 @@ static int countArguments(treeNode *args) {
         t = t->sibling;
     }
     return count;
+}
+
+// Estrutura para rastrear declarações no escopo atual durante a análise
+typedef struct DeclaredVar {
+    char *name;
+    char *scope;
+    struct DeclaredVar *next;
+} DeclaredVar;
+
+static DeclaredVar *declaredList = NULL;
+
+// Função para verificar se já foi declarado no escopo
+static int wasDeclared(char *name, char *scope) {
+    DeclaredVar *current = declaredList;
+    while (current != NULL) {
+        if (strcmp(current->name, name) == 0 && strcmp(current->scope, scope) == 0) {
+            return 1; // Encontrou duplicata
+        }
+        current = current->next;
+    }
+    return 0; // Não encontrado
+}
+
+// Função para registrar uma nova declaração
+static void registerDeclaration(char *name, char *scope) {
+    DeclaredVar *newNode = (DeclaredVar *)malloc(sizeof(DeclaredVar));
+    newNode->name = strdup(name);
+    newNode->scope = strdup(scope);
+    newNode->next = declaredList;
+    declaredList = newNode;
 }
 
 static void traverse(treeNode *t);
@@ -175,15 +205,25 @@ static void checkNode(treeNode *t) {
 
         case decl:
             switch (t->nodeSubType.decl) {
-                case declVar:
+                case declVar: //Verificação Erro 3 de Variável Void
                     if (t->type == Void) {
                         semanticError(t, "Variavel nao pode ser declarada como Void");
                     }
+                    // Verificação Erro 7
                     Symbol *symGlobal = findSymbol(&tabela, t->key.name, "global");
                     if (symGlobal != NULL && symGlobal->type == FUNC) {
                         char erro[100];
                         sprintf(erro, "Declaracao invalida, '%s' ja foi declarado como nome de funcao", t->key.name);
                         semanticError(t, erro);
+                    } 
+                    //Verificação Erro 4:
+                    if (wasDeclared(t->key.name, currentScope)) {
+                        char erro[200];
+                        sprintf(erro, "Declaracao invalida de variavel, '%s' ja foi declarada previamente", t->key.name);
+                        semanticError(t, erro);
+                    } else {
+                        // Se não foi declarada, registra agora
+                        registerDeclaration(t->key.name, currentScope);
                     }
                     break;
             }
@@ -220,4 +260,3 @@ void semanticAnalysis(treeNode *tree) {
 
     traverse(tree);
 }
-
