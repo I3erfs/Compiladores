@@ -208,6 +208,10 @@ statement:
 expressao_decl:
     expressao SEMICOLON {
         $$ = $1;
+        // Se o nó for uma chamada de função (stmtFunc) usada solta como statement
+        if ($$ != NULL && $$->node == stmt && $$->nodeSubType.stmt == stmtFunc) {
+            $$->isIgnored = 1; // Marca que o retorno está sendo ignorado
+        }
     }
     ;
 
@@ -360,6 +364,12 @@ arg_lista:
 int yyerror(char *errorMsg) {
   printf("(!) ERRO SINTATICO: Linha: %d | Token: %s\n", yylineno, yytext);
   return 1;
+}
+
+treeNode *parse() {
+
+    parseResult = yyparse(); 
+    return syntax_tree; 
 }
 
 treeNode *parse() {
