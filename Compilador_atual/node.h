@@ -21,6 +21,7 @@ typedef struct treeNode {
     int line;
     int params; 
     int args;
+    int isIgnored; // flag para cahmada de função
     nodeType node;
     primitiveType type;
 
@@ -35,3 +36,4 @@ void printTreeNode(treeNode *tree);
 treeNode *parse();
 
 #endif
+
