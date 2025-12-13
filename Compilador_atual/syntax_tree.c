@@ -7,6 +7,7 @@
 
 extern char *yytext;
 extern int tokenNUM;
+extern int yylineno;
 
 
 // Função para criar um nó genérico
@@ -17,7 +18,7 @@ char *currentToken;
 char *currentScope = "global";
 char *argName;
 
-int currentLine = 1;
+//int currentLine = 1;
 int functionCurrentLine = 1;
 int argsCount = 0;
 int paramsCount = 0;
@@ -29,7 +30,7 @@ treeNode *createNode() {
         newNode->child[i] = NULL;
     }
     newNode->sibling = NULL;
-    newNode->line = currentLine;
+    newNode->line = yylineno;
     newNode->scope = currentScope;
     newNode->isIgnored = 0; // flag inicia com 0
     return newNode;
@@ -191,7 +192,7 @@ treeNode *createActivationFunc(stmtType stmtFunc, treeNode *arguments, char *nam
     treeNode *activationFuncNode = createStmtNode(stmtFunc);
     activationFuncNode->child[1] = arguments; 
     
-    // USAMOS O PARÂMETRO 'name' QUE VEIO DO PARSER
+    // Usamos o parâmetro'name' que veio do parser
     if (name != NULL) {
         activationFuncNode->key.name = strdup(name);
     } else {
@@ -200,7 +201,7 @@ treeNode *createActivationFunc(stmtType stmtFunc, treeNode *arguments, char *nam
 
     // Não usamos mais a global functionName ou expName aqui!
     
-    activationFuncNode->line = currentLine; // Ou functionCurrentLine se estiver correta
+    //activationFuncNode->line = currentLine; // Ou functionCurrentLine se estiver correta
     activationFuncNode->args = argsCount;
     return activationFuncNode;
 }
