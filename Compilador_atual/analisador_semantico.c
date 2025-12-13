@@ -102,10 +102,27 @@ static void checkNode(treeNode *t) {
                         semanticError(t, erro);
                         t->type = Integer; 
                     } else {
-                        if (sym->type == ARRAY) {
-                            t->type = Array;
-                        } else {
-                            t->type = sym->dataType;
+                        // Verifica se é um acesso a array
+                        if (t->child[0] != NULL) {
+                            t->type = Integer;
+                            // Verificar se o índice é inteiro
+                            if (t->child[0]->type != Integer) {
+                                semanticError(t->child[0], "Indice do array deve ser inteiro");
+                            }                        
+                            // Verificar se a variável é realmente um array
+                            if (sym->type != ARRAY) {
+                                char erro[150];
+                                sprintf(erro, "Variavel '%s' nao e um array", t->key.name);
+                                semanticError(t, erro);
+                            }
+                        } 
+                        else {
+                            // É apenas o identificador
+                            if (sym->type == ARRAY) {
+                                t->type = Array;
+                            } else {
+                                t->type = sym->dataType;
+                            }
                         }
                     }
                     break;
@@ -126,10 +143,10 @@ static void checkNode(treeNode *t) {
                         sym = lookupSymbol(t->child[0]->key.name);
                         if (sym == NULL) {
                         } else {
-                            if (sym->dataType != t->child[1]->type) {
+                            if (t->child[0]->type != t->child[1]->type) {
                                 semanticError(t, "Atribuicao com tipos incompatíveis");
                             }
-                            if (sym->type == ARRAY) {
+                            if (sym->type == ARRAY && t->child[0]->child[0] == NULL) {
                                 semanticError(t, "Atribuicao direta para Array nao permitida (use indices)");
                             }
                         }
@@ -150,7 +167,7 @@ static void checkNode(treeNode *t) {
                     
                     if (numArgs != sym->numParams) {
                          char erro[150];
-                         sprintf(erro, "Chamada invalida para '%s': esperava %d argumentos, recebeu %d", 
+                         sprintf(erro, "Chamada invalida para '%s': esperava %d argumento(s), recebeu %d", 
                          t->key.name, sym->numParams, numArgs);
                          semanticError(t, erro);
                     } 
@@ -254,9 +271,14 @@ static void traverse(treeNode *t) {
 }
 
 void semanticAnalysis(treeNode *tree) {
+    //Verificação da entrada de output()
+    if (findSymbol(&tabela, "output", "global") != NULL) {
+        primitiveType outputParams[] = { Integer };
+        setSymbolParams(&tabela, "output", "global", 1, outputParams);
+    }
     if (findSymbol(&tabela, "main", "global") == NULL) {
         fprintf(stderr, "ERRO SEMANTICO: Funcao 'main' nao encontrada.\n");
     }
-
     traverse(tree);
 }
+
