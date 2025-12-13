@@ -261,7 +261,6 @@ var:
     ID {
         $$ = createExpVar(expId);
         $$->line = yylineno;
-        insertSymbolInTable(expName, currentScope, VAR, yylineno, Integer);
     }
     | ID LBRACK expressao RBRACK {
         $$ = createArrayExpVar(expId, $3);
@@ -341,7 +340,6 @@ ativacao:
     id_ativacao LPAREN args RPAREN {
         $$ = createActivationFunc(stmtFunc, $3, $1->key.name);
         $$->line = yylineno;
-        insertSymbolInTable($1->key.name, "global", FUNC, yylineno, Integer);
     }
     ;
 
