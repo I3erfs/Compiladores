@@ -261,12 +261,25 @@ var:
     ID {
         $$ = createExpVar(expId);
         $$->line = yylineno;
+        // Verifica se a variável já existe na tabela (foi declarada)
+        Symbol *s = findSymbol(&tabela, expName, currentScope);
+        if (s) {
+            // Se existe, regista linha
+            addLine(s, yylineno);
+        }
     }
     | ID LBRACK expressao RBRACK {
         $$ = createArrayExpVar(expId, $3);
         $$->line = yylineno;
-        insertSymbolInTable(variableName, currentScope, ARRAY, yylineno, Integer);
+        // Verifica se array existe na tabela
+        Symbol *s = findSymbol(&tabela, variableName, currentScope);
+        if (s) {
+            //Se existe, adiciona array
+            addLine(s, yylineno);
+        }
+        // insertSymbolInTable(variableName, currentScope, ARRAY, yylineno, Integer);
     }
+    ;
 
 simples_expressao:
     soma_expressao relacional soma_expressao {
@@ -340,9 +353,24 @@ ativacao:
     id_ativacao LPAREN args RPAREN {
         $$ = createActivationFunc(stmtFunc, $3, $1->key.name);
         $$->line = yylineno;
+        // verificação para funções input e output
+        if (strcmp($1->key.name, "input") == 0) {
+             insertSymbolInTable("input", "global", FUNC, yylineno, Integer);
+        }
+        else if (strcmp($1->key.name, "output") == 0) {
+             insertSymbolInTable("output", "global", FUNC, yylineno, Void);
+        }
+        // 2. Para outras funções (do usuário):
+        // Só adicionamos a linha se ela JÁ tiver sido declarada antes.
+        // Se não existir, não fazemos nada (o analisador semântico dará o erro depois).
+        else {
+            Symbol *s = findSymbol(&tabela, $1->key.name, "global");
+            if (s != NULL) {
+                addLine(s, yylineno);
+            }
+        }
     }
     ;
-
 
 args:
     arg_lista {
