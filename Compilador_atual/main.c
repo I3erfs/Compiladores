@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include "syntax_tree.h"
 #include "symbol_table.h"
+#include "analisador_semantico.h"
 #include "utils.h"
 #include "node.h"
 
