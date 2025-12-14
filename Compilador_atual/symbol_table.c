@@ -112,4 +112,3 @@ void printSymbolTable(SymbolTable *table) {
         }
     }
 }
-}
