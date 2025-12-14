@@ -38,4 +38,3 @@ int hash(char *key);
 void setSymbolParams(SymbolTable *table, char *name, char *scope, int numParams, primitiveType *paramTypes);
 
 #endif // SYMBOL_TABLE_H
-#endif // SYMBOL_TABLE_H
