@@ -4,7 +4,6 @@
   #include <string.h>
   #include "syntax_tree.h"
   #include "node.h"
-  #include "utils.h"
   #include "symbol_table.h"
   
   #define MAX_PARAMS 50
